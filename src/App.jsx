@@ -10,64 +10,208 @@ import {
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
 
-import LogicNode from './nodes/LogicNode';
-import Sidebar from './components/Sidebar';
-import { buildCircuitModel } from './utils/circuitModel';
+import LogicNode
+  from './nodes/LogicNode';
+
+import Sidebar
+  from './components/Sidebar';
+
+import AnalysisPanel
+  from './components/AnalysisPanel';
+
+import FeedbackPanel
+  from './components/FeedbackPanel';
+
+import {
+  buildCircuitModel,
+} from './utils/circuitModel';
+
+import {
+  validateCircuit,
+  checkNewConnection,
+} from './utils/validation';
+
+import {
+  simulateCircuit,
+} from './utils/circuitEngine';
+
+import {
+  generateTruthTable,
+} from './utils/truthTable';
+
+import {
+  generateBooleanExpressions,
+} from './utils/booleanExpression';
+
+import {
+  verifyEquivalence,
+} from './utils/equivalence';
 
 const nodeTypes = {
   logicNode: LogicNode,
 };
 
-function nextInputName(nodes) {
-  const count = nodes.filter(
-    (node) => node.data.kind === 'INPUT'
-  ).length;
+function createEmptyAnalysis() {
+  return {
+    status: 'SIN_GENERAR',
+    revision: null,
+    truthTable: null,
+    expressionResult: null,
+    equivalence: null,
+    error: '',
+  };
+}
 
-  if (count < 26) {
-    return String.fromCharCode(65 + count);
+function createEmptySimulation() {
+  return {
+    status: 'SIN_GENERAR',
+    revision: null,
+    result: null,
+    error: '',
+  };
+}
+
+function nextInputName(nodes) {
+  const used = new Set(
+    nodes
+      .filter(
+        (node) =>
+          node.data.kind ===
+          'INPUT'
+      )
+      .map(
+        (node) =>
+          node.data.name
+      )
+  );
+
+  for (
+    let index = 0;
+    index < 26;
+    index++
+  ) {
+    const name =
+      String.fromCharCode(
+        65 + index
+      );
+
+    if (!used.has(name)) {
+      return name;
+    }
   }
 
-  return `I${count + 1}`;
+  let number = 1;
+
+  while (
+    used.has(`I${number}`)
+  ) {
+    number++;
+  }
+
+  return `I${number}`;
 }
 
 function nextOutputName(nodes) {
-  const count = nodes.filter(
-    (node) => node.data.kind === 'OUTPUT'
-  ).length;
+  const used = new Set(
+    nodes
+      .filter(
+        (node) =>
+          node.data.kind ===
+          'OUTPUT'
+      )
+      .map(
+        (node) =>
+          node.data.name
+      )
+  );
 
-  return `F${count + 1}`;
+  let number = 1;
+
+  while (
+    used.has(`F${number}`)
+  ) {
+    number++;
+  }
+
+  return `F${number}`;
 }
 
-function nextGateName(nodes, kind) {
-  const count = nodes.filter(
-    (node) => node.data.kind === kind
-  ).length;
+function nextGateName(
+  nodes,
+  kind
+) {
+  const used = new Set(
+    nodes
+      .filter(
+        (node) =>
+          node.data.kind ===
+          kind
+      )
+      .map(
+        (node) =>
+          node.data.name
+      )
+  );
 
-  return `${kind}${count + 1}`;
+  let number = 1;
+
+  while (
+    used.has(
+      `${kind}${number}`
+    )
+  ) {
+    number++;
+  }
+
+  return `${kind}${number}`;
 }
 
-function createComponent(kind, nodes) {
+function createComponent(
+  kind,
+  nodes
+) {
   let name;
 
   if (kind === 'INPUT') {
-    name = nextInputName(nodes);
-  } else if (kind === 'OUTPUT') {
-    name = nextOutputName(nodes);
+    name =
+      nextInputName(nodes);
+  } else if (
+    kind === 'OUTPUT'
+  ) {
+    name =
+      nextOutputName(nodes);
   } else {
-    name = nextGateName(nodes, kind);
+    name =
+      nextGateName(
+        nodes,
+        kind
+      );
   }
 
   return {
-    id: crypto.randomUUID(),
-    type: 'logicNode',
+    id:
+      crypto.randomUUID(),
+
+    type:
+      'logicNode',
 
     position: {
-      x: 150 + (nodes.length % 4) * 160,
-      y: 80 + Math.floor(nodes.length / 4) * 120,
+      x:
+        150 +
+        (nodes.length % 4) *
+          160,
+
+      y:
+        80 +
+        Math.floor(
+          nodes.length / 4
+        ) *
+          120,
     },
 
     data: {
@@ -90,236 +234,893 @@ export default function App() {
     onEdgesChangeOriginal,
   ] = useEdgesState([]);
 
-  const [revision, setRevision] = useState(0);
+  const [
+    revision,
+    setRevision,
+  ] = useState(0);
 
-  const [message, setMessage] = useState(
+  const [
+    inputValues,
+    setInputValues,
+  ] = useState({});
+
+  const [
+    validationResult,
+    setValidationResult,
+  ] = useState(null);
+
+  const [
+    simulation,
+    setSimulation,
+  ] = useState(
+    createEmptySimulation()
+  );
+
+  const [
+    analysis,
+    setAnalysis,
+  ] = useState(
+    createEmptyAnalysis()
+  );
+
+  const [
+    message,
+    setMessage,
+  ] = useState(
     'Agrega componentes para comenzar.'
   );
 
-  const addComponent = useCallback(
-    (kind) => {
-      setNodes((currentNodes) => {
+  /*
+   * Limpiar valores de entradas
+   * eliminadas.
+   */
+
+  useEffect(() => {
+    const inputIds =
+      new Set(
+        nodes
+          .filter(
+            (node) =>
+              node.data.kind ===
+              'INPUT'
+          )
+          .map(
+            (node) =>
+              node.id
+          )
+      );
+
+    setInputValues(
+      (current) => {
+        const next = {};
+
+        for (
+          const [
+            id,
+            value,
+          ]
+          of Object.entries(
+            current
+          )
+        ) {
+          if (
+            inputIds.has(id)
+          ) {
+            next[id] =
+              value;
+          }
+        }
+
+        return next;
+      }
+    );
+  }, [nodes]);
+
+  const markStructuralChange =
+    useCallback(
+      (text) => {
+        setRevision(
+          (value) =>
+            value + 1
+        );
+
+        setValidationResult(
+          null
+        );
+
+        setSimulation(
+          (current) => {
+            if (
+              current.result
+            ) {
+              return {
+                ...current,
+                status:
+                  'DESACTUALIZADO',
+              };
+            }
+
+            return createEmptySimulation();
+          }
+        );
+
+        setAnalysis(
+          (current) => {
+            if (
+              current.truthTable ||
+              current.expressionResult
+            ) {
+              return {
+                ...current,
+                status:
+                  'DESACTUALIZADO',
+              };
+            }
+
+            return createEmptyAnalysis();
+          }
+        );
+
+        setMessage(text);
+      },
+      []
+    );
+
+  /*
+   * --------------------------------------------
+   * AGREGAR COMPONENTE
+   * --------------------------------------------
+   */
+
+  const addComponent =
+    useCallback(
+      (kind) => {
         const newNode =
-          createComponent(kind, currentNodes);
+          createComponent(
+            kind,
+            nodes
+          );
 
-        return [...currentNodes, newNode];
-      });
+        setNodes(
+          (current) => [
+            ...current,
+            newNode,
+          ]
+        );
 
-      setRevision((value) => value + 1);
+        if (
+          kind === 'INPUT'
+        ) {
+          setInputValues(
+            (current) => ({
+              ...current,
+              [newNode.id]: 0,
+            })
+          );
+        }
 
-      setMessage(
-        `Componente ${kind} agregado correctamente.`
-      );
-    },
-    [setNodes]
-  );
+        markStructuralChange(
+          `Componente ${newNode.data.name} agregado.`
+        );
+      },
+      [
+        nodes,
+        setNodes,
+        markStructuralChange,
+      ]
+    );
 
-  const isValidConnection = useCallback(
-    (connection) => {
-      const sourceNode = nodes.find(
-        (node) => node.id === connection.source
-      );
+  /*
+   * --------------------------------------------
+   * CONEXIONES
+   * --------------------------------------------
+   */
 
-      const targetNode = nodes.find(
-        (node) => node.id === connection.target
-      );
+  const connectionCheck =
+    useCallback(
+      (connection) =>
+        checkNewConnection(
+          nodes,
+          edges,
+          connection
+        ),
+      [
+        nodes,
+        edges,
+      ]
+    );
 
-      if (!sourceNode || !targetNode) {
-        return false;
-      }
+  const isValidConnection =
+    useCallback(
+      (connection) =>
+        connectionCheck(
+          connection
+        ).valid,
+      [
+        connectionCheck,
+      ]
+    );
 
-      // Una salida final no puede originar conexiones.
-      if (sourceNode.data.kind === 'OUTPUT') {
-        return false;
-      }
+  const onConnect =
+    useCallback(
+      (connection) => {
+        const check =
+          connectionCheck(
+            connection
+          );
 
-      // Una entrada independiente no recibe señales.
-      if (targetNode.data.kind === 'INPUT') {
-        return false;
-      }
+        if (!check.valid) {
+          setMessage(
+            `${check.code}: ${check.message}`
+          );
 
-      // No conectamos un elemento consigo mismo.
-      if (connection.source === connection.target) {
-        return false;
-      }
+          return;
+        }
 
-      // Cada puerto de entrada admite un único origen.
-      const targetAlreadyConnected = edges.some(
-        (edge) =>
-          edge.target === connection.target &&
-          edge.targetHandle ===
-            connection.targetHandle
-      );
+        setEdges(
+          (current) =>
+            addEdge(
+              {
+                ...connection,
+                type:
+                  'smoothstep',
+              },
+              current
+            )
+        );
 
-      if (targetAlreadyConnected) {
-        return false;
-      }
+        markStructuralChange(
+          'Conexión agregada correctamente.'
+        );
+      },
+      [
+        connectionCheck,
+        setEdges,
+        markStructuralChange,
+      ]
+    );
 
-      // Evitar conexión idéntica duplicada.
-      const duplicated = edges.some(
-        (edge) =>
-          edge.source === connection.source &&
-          edge.sourceHandle ===
-            connection.sourceHandle &&
-          edge.target === connection.target &&
-          edge.targetHandle ===
-            connection.targetHandle
-      );
+  /*
+   * --------------------------------------------
+   * CAMBIOS EN NODOS
+   * --------------------------------------------
+   */
 
-      if (duplicated) {
-        return false;
-      }
+  const onNodesChange =
+    useCallback(
+      (changes) => {
+        onNodesChangeOriginal(
+          changes
+        );
 
-      return true;
-    },
-    [nodes, edges]
-  );
+        const removed =
+          changes.some(
+            (change) =>
+              change.type ===
+              'remove'
+          );
 
-  const onConnect = useCallback(
-    (connection) => {
-      if (!isValidConnection(connection)) {
+        if (removed) {
+          markStructuralChange(
+            'Componente eliminado. Los resultados anteriores dejaron de estar vigentes.'
+          );
+        }
+      },
+      [
+        onNodesChangeOriginal,
+        markStructuralChange,
+      ]
+    );
+
+  /*
+   * --------------------------------------------
+   * CAMBIOS EN CONEXIONES
+   * --------------------------------------------
+   */
+
+  const onEdgesChange =
+    useCallback(
+      (changes) => {
+        onEdgesChangeOriginal(
+          changes
+        );
+
+        const removed =
+          changes.some(
+            (change) =>
+              change.type ===
+              'remove'
+          );
+
+        if (removed) {
+          markStructuralChange(
+            'Conexión eliminada. Los resultados anteriores dejaron de estar vigentes.'
+          );
+        }
+      },
+      [
+        onEdgesChangeOriginal,
+        markStructuralChange,
+      ]
+    );
+
+  /*
+   * --------------------------------------------
+   * REINICIO
+   * --------------------------------------------
+   */
+
+  const clearWorkspace =
+    useCallback(() => {
+      if (
+        nodes.length === 0 &&
+        edges.length === 0
+      ) {
         setMessage(
-          'Conexión inválida. Verifica los puertos seleccionados.'
+          'El área de trabajo ya se encuentra vacía.'
         );
 
         return;
       }
 
-      setEdges((currentEdges) =>
-        addEdge(
-          {
-            ...connection,
-            type: 'smoothstep',
-          },
-          currentEdges
-        )
+      const confirmed =
+        window.confirm(
+          '¿Deseas eliminar todo el circuito?'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setNodes([]);
+      setEdges([]);
+      setInputValues({});
+      setValidationResult(null);
+
+      setSimulation(
+        createEmptySimulation()
       );
 
-      setRevision((value) => value + 1);
+      setAnalysis(
+        createEmptyAnalysis()
+      );
+
+      setRevision(
+        (value) =>
+          value + 1
+      );
 
       setMessage(
-        'Conexión creada correctamente.'
+        'Área de trabajo reiniciada.'
       );
-    },
-    [isValidConnection, setEdges]
-  );
+    }, [
+      nodes,
+      edges,
+      setNodes,
+      setEdges,
+    ]);
 
-  const onNodesChange = useCallback(
-    (changes) => {
-      onNodesChangeOriginal(changes);
+  /*
+   * --------------------------------------------
+   * ENTRADAS 0 / 1
+   * --------------------------------------------
+   */
 
-      const structuralChange = changes.some(
-        (change) => change.type === 'remove'
-      );
+  const toggleInput =
+    useCallback(
+      (inputId) => {
+        setInputValues(
+          (current) => ({
+            ...current,
 
-      if (structuralChange) {
-        setRevision((value) => value + 1);
+            [inputId]:
+              current[
+                inputId
+              ] === 1
+                ? 0
+                : 1,
+          })
+        );
+
+        setSimulation(
+          (current) =>
+            current.result
+              ? {
+                  ...current,
+                  status:
+                    'DESACTUALIZADO',
+                }
+              : current
+        );
 
         setMessage(
-          'Componente eliminado. El circuito fue modificado.'
+          'Entrada modificada. Ejecuta nuevamente la simulación para actualizar los estados.'
         );
-      }
-    },
-    [onNodesChangeOriginal]
-  );
+      },
+      []
+    );
 
-  const onEdgesChange = useCallback(
-    (changes) => {
-      onEdgesChangeOriginal(changes);
+  /*
+   * --------------------------------------------
+   * VALIDAR
+   * --------------------------------------------
+   */
 
-      const structuralChange = changes.some(
-        (change) => change.type === 'remove'
+  const handleValidate =
+    useCallback(() => {
+      const result =
+        validateCircuit(
+          nodes,
+          edges
+        );
+
+      setValidationResult(
+        result
       );
 
-      if (structuralChange) {
-        setRevision((value) => value + 1);
+      if (result.isValid) {
+        setMessage(
+          `Circuito válido. ${result.warnings.length} advertencia(s).`
+        );
+      } else {
+        setMessage(
+          `Circuito inválido. Se detectaron ${result.errors.length} error(es).`
+        );
+      }
+    }, [
+      nodes,
+      edges,
+    ]);
+
+  /*
+   * --------------------------------------------
+   * SIMULAR
+   * --------------------------------------------
+   */
+
+  const handleSimulation =
+    useCallback(() => {
+      const validation =
+        validateCircuit(
+          nodes,
+          edges
+        );
+
+      setValidationResult(
+        validation
+      );
+
+      if (
+        !validation.isValid
+      ) {
+        setSimulation({
+          status: 'ERROR',
+          revision,
+          result: null,
+          error:
+            validation.errors
+              .map(
+                (error) =>
+                  error.message
+              )
+              .join(' '),
+        });
 
         setMessage(
-          'Conexión eliminada. El circuito fue modificado.'
+          'La simulación fue cancelada porque el circuito es inválido.'
+        );
+
+        return;
+      }
+
+      try {
+        const result =
+          simulateCircuit(
+            nodes,
+            edges,
+            inputValues,
+            validation
+          );
+
+        setSimulation({
+          status:
+            'VIGENTE',
+
+          revision,
+          result,
+          error: '',
+        });
+
+        setMessage(
+          'Simulación completada correctamente.'
+        );
+      } catch (error) {
+        setSimulation({
+          status: 'ERROR',
+          revision,
+          result: null,
+          error:
+            error.message,
+        });
+
+        setMessage(
+          'Ocurrió un error durante la simulación.'
         );
       }
-    },
-    [onEdgesChangeOriginal]
-  );
+    }, [
+      nodes,
+      edges,
+      inputValues,
+      revision,
+    ]);
 
-  const clearWorkspace = useCallback(() => {
-    const hasElements =
-      nodes.length > 0 || edges.length > 0;
+  /*
+   * --------------------------------------------
+   * ANÁLISIS INTEGRADO
+   * --------------------------------------------
+   */
 
-    if (!hasElements) {
-      setMessage(
-        'El área de trabajo ya está vacía.'
+  const handleAnalysis =
+    useCallback(() => {
+      const validation =
+        validateCircuit(
+          nodes,
+          edges
+        );
+
+      setValidationResult(
+        validation
       );
 
-      return;
-    }
+      if (
+        !validation.isValid
+      ) {
+        setAnalysis({
+          ...createEmptyAnalysis(),
 
-    const confirmed = window.confirm(
-      '¿Deseas eliminar todo el circuito?'
+          status: 'ERROR',
+          revision,
+
+          error:
+            validation.errors
+              .map(
+                (error) =>
+                  error.message
+              )
+              .join(' '),
+        });
+
+        setMessage(
+          'No es posible analizar un circuito inválido.'
+        );
+
+        return;
+      }
+
+      setAnalysis(
+        (current) => ({
+          ...current,
+          status:
+            'PROCESANDO',
+          error: '',
+        })
+      );
+
+      try {
+        const truthTable =
+          generateTruthTable(
+            nodes,
+            edges,
+            revision
+          );
+
+        const expressionResult =
+          generateBooleanExpressions(
+            nodes,
+            edges,
+            revision
+          );
+
+        const equivalence =
+          verifyEquivalence(
+            truthTable,
+            expressionResult
+          );
+
+        setAnalysis({
+          status:
+            equivalence
+              .isEquivalent
+              ? 'VIGENTE'
+              : 'ERROR',
+
+          revision,
+          truthTable,
+          expressionResult,
+          equivalence,
+
+          error:
+            equivalence.error ??
+            '',
+        });
+
+        if (
+          equivalence
+            .isEquivalent
+        ) {
+          setMessage(
+            'Análisis integrado completado. Las representaciones son equivalentes.'
+          );
+        } else {
+          setMessage(
+            'Se detectó una inconsistencia lógica entre las representaciones.'
+          );
+        }
+      } catch (error) {
+        setAnalysis({
+          ...createEmptyAnalysis(),
+
+          status: 'ERROR',
+          revision,
+          error:
+            error.message,
+        });
+
+        setMessage(
+          'No fue posible completar el análisis.'
+        );
+      }
+    }, [
+      nodes,
+      edges,
+      revision,
+    ]);
+
+  /*
+   * --------------------------------------------
+   * NODOS CON ESTADO VISUAL
+   * --------------------------------------------
+   */
+
+  const errorNodeIds =
+    useMemo(() => {
+      const ids = new Set();
+
+      if (
+        !validationResult
+      ) {
+        return ids;
+      }
+
+      for (
+        const error of
+        validationResult.errors
+      ) {
+        if (error.nodeId) {
+          ids.add(
+            error.nodeId
+          );
+        }
+
+        for (
+          const id of
+          error.relatedNodeIds ??
+          []
+        ) {
+          ids.add(id);
+        }
+      }
+
+      return ids;
+    }, [
+      validationResult,
+    ]);
+
+  const simulationIsCurrent =
+    simulation.status ===
+      'VIGENTE' &&
+    simulation.revision ===
+      revision;
+
+  const displayedNodes =
+    useMemo(
+      () =>
+        nodes.map(
+          (node) => ({
+            ...node,
+
+            data: {
+              ...node.data,
+
+              inputValue:
+                inputValues[
+                  node.id
+                ] ?? 0,
+
+              logicValue:
+                simulationIsCurrent
+                  ? simulation
+                      .result
+                      ?.nodeValues[
+                        node.id
+                      ]
+                  : null,
+
+              onToggleInput:
+                toggleInput,
+
+              hasError:
+                errorNodeIds.has(
+                  node.id
+                ),
+            },
+          })
+        ),
+      [
+        nodes,
+        inputValues,
+        simulationIsCurrent,
+        simulation,
+        toggleInput,
+        errorNodeIds,
+      ]
     );
 
-    if (!confirmed) {
-      return;
-    }
+  /*
+   * --------------------------------------------
+   * CONEXIONES CON ESTADO VISUAL
+   * --------------------------------------------
+   */
 
-    setNodes([]);
-    setEdges([]);
+  const displayedEdges =
+    useMemo(
+      () =>
+        edges.map(
+          (edge) => {
+            const signal =
+              simulationIsCurrent
+                ? simulation
+                    .result
+                    ?.nodeValues[
+                      edge.source
+                    ]
+                : null;
 
-    setRevision((value) => value + 1);
+            let signalClass =
+              '';
 
-    setMessage(
-      'Área de trabajo reiniciada.'
+            if (signal === 1) {
+              signalClass =
+                'signal-high-edge';
+            } else if (
+              signal === 0
+            ) {
+              signalClass =
+                'signal-low-edge';
+            }
+
+            return {
+              ...edge,
+
+              className:
+                signalClass,
+
+              animated:
+                signal === 1,
+            };
+          }
+        ),
+      [
+        edges,
+        simulationIsCurrent,
+        simulation,
+      ]
     );
-  }, [
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-  ]);
 
-  const model = useMemo(
-    () =>
-      buildCircuitModel(
+  const model =
+    useMemo(
+      () =>
+        buildCircuitModel(
+          nodes,
+          edges,
+          revision
+        ),
+      [
         nodes,
         edges,
-        revision
-      ),
-    [nodes, edges, revision]
-  );
+        revision,
+      ]
+    );
 
   return (
     <div className="app-layout">
       <Sidebar
-        onAddComponent={addComponent}
-        onClear={clearWorkspace}
-        revision={revision}
+        onAddComponent={
+          addComponent
+        }
+        onClear={
+          clearWorkspace
+        }
+        revision={
+          revision
+        }
       />
 
       <main className="workspace">
         <header className="workspace-header">
           <div>
-            <h2>Editor de circuitos</h2>
+            <h2>
+              Editor de circuitos
+            </h2>
 
             <span>
-              Componentes: {nodes.length}
+              Componentes:{' '}
+              {nodes.length}
               {' · '}
-              Conexiones: {edges.length}
+              Conexiones:{' '}
+              {edges.length}
+              {' · '}
+              Revisión:{' '}
+              {revision}
             </span>
           </div>
 
-          <div className="status-message">
-            {message}
+          <div className="header-right">
+            <div className="header-actions">
+              <button
+                className="validate-action"
+                onClick={
+                  handleValidate
+                }
+              >
+                Validar
+              </button>
+
+              <button
+                className="simulate-action"
+                onClick={
+                  handleSimulation
+                }
+              >
+                Simular
+              </button>
+
+              <button
+                className="primary-action"
+                onClick={
+                  handleAnalysis
+                }
+              >
+                Analizar circuito
+              </button>
+            </div>
+
+            <div className="status-message">
+              {message}
+            </div>
           </div>
         </header>
 
         <div className="flow-container">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            nodes={
+              displayedNodes
+            }
+            edges={
+              displayedEdges
+            }
+            nodeTypes={
+              nodeTypes
+            }
+            onNodesChange={
+              onNodesChange
+            }
+            onEdgesChange={
+              onEdgesChange
+            }
+            onConnect={
+              onConnect
+            }
             isValidConnection={
               isValidConnection
             }
@@ -329,19 +1130,44 @@ export default function App() {
               'Delete',
             ]}
           >
-            <Background gap={20} />
+            <Background
+              gap={20}
+            />
+
             <Controls />
+
             <MiniMap />
           </ReactFlow>
         </div>
 
+        <FeedbackPanel
+          validation={
+            validationResult
+          }
+          simulation={
+            simulation
+          }
+          nodes={nodes}
+        />
+
+        <AnalysisPanel
+          analysis={
+            analysis
+          }
+        />
+
         <details className="model-panel">
           <summary>
-            Ver modelo interno del circuito
+            Ver modelo interno
+            del circuito
           </summary>
 
           <pre>
-            {JSON.stringify(model, null, 2)}
+            {JSON.stringify(
+              model,
+              null,
+              2
+            )}
           </pre>
         </details>
       </main>
