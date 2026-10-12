@@ -1,0 +1,239 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #f3f4f6;
+  color: #111827;
+}
+
+button {
+  font: inherit;
+}
+
+.app-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: #111827;
+  color: white;
+  padding: 22px 18px;
+  overflow-y: auto;
+}
+
+.sidebar h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.subtitle {
+  margin-top: 4px;
+  margin-bottom: 24px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.sidebar-section {
+  border-top: 1px solid #374151;
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.sidebar-section h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  margin-bottom: 7px;
+  border: 1px solid #374151;
+  border-radius: 7px;
+  background: #1f2937;
+  color: white;
+  padding: 9px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar button:hover {
+  background: #374151;
+}
+
+.sidebar .danger-button {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  text-align: center;
+}
+
+.sidebar .danger-button:hover {
+  background: #991b1b;
+}
+
+.revision-box {
+  display: flex;
+  justify-content: space-between;
+  background: #1f2937;
+  padding: 10px;
+  border-radius: 7px;
+  margin-bottom: 10px;
+}
+
+.help-box {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #1f2937;
+  font-size: 12px;
+  color: #d1d5db;
+}
+
+.help-box p {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.workspace-header {
+  min-height: 72px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.workspace-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.workspace-header span {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.status-message {
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.flow-container {
+  flex: 1;
+  min-height: 0;
+  background: #f9fafb;
+}
+
+.logic-node {
+  position: relative;
+  min-width: 92px;
+  min-height: 56px;
+  border: 2px solid #374151;
+  border-radius: 9px;
+  background: white;
+  padding: 10px 14px;
+  text-align: center;
+  box-shadow:
+    0 3px 8px
+    rgba(0, 0, 0, 0.12);
+}
+
+.input-node {
+  border-color: #2563eb;
+}
+
+.output-node {
+  border-color: #059669;
+}
+
+.gate-node {
+  min-width: 105px;
+}
+
+.node-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.node-type {
+  color: #6b7280;
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.gate-symbol {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.gate-instance {
+  color: #6b7280;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+}
+
+.model-panel {
+  max-height: 210px;
+  overflow: auto;
+  background: #111827;
+  color: #e5e7eb;
+  border-top: 1px solid #374151;
+}
+
+.model-panel summary {
+  padding: 9px 15px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.model-panel pre {
+  margin: 0;
+  padding: 0 15px 15px;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
