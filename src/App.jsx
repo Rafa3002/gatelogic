@@ -16,6 +16,11 @@ import {
   useState,
 } from 'react';
 
+import ExpressionBuilderPanel from './components/ExpressionBuilderPanel.jsx';
+import { expressionToCircuit } from './utils/expressionToCircuit.js';
+
+import ExportActions from './components/ExportActions.jsx';
+
 import LogicNode
   from './nodes/LogicNode';
 
@@ -379,6 +384,23 @@ export default function App() {
       },
       [simulationLive]
     );
+
+    const handleGenerateFromExpression = useCallback((expression) => {
+                if ((nodes.length || edges.length) &&
+                    !window.confirm('Esto reemplazará el circuito actual. ¿Deseas continuar?')) {
+                  return;
+                }
+
+                try {
+                  const generated = expressionToCircuit(expression);
+                  setNodes(generated.nodes);
+                  setEdges(generated.edges);
+                  setInputValues(generated.inputValues);
+                  markStructuralChange('Circuito generado a partir de expresión booleana.');
+                } catch (error) {
+                  setMessage(`No se pudo generar el circuito: ${error.message}`);
+                }
+              }, [nodes.length, edges.length, setNodes, setEdges, markStructuralChange]);
 
   /*
    * --------------------------------------------
@@ -1302,6 +1324,7 @@ const handleSelectActivity =
               {' · '}
               Revisión:{' '}
               {revision}
+              
             </span>
           </div>
 
@@ -1387,6 +1410,7 @@ const handleSelectActivity =
             fitView
             deleteKeyCode={['Backspace', 'Delete']}
           >
+            
             <Background
               gap={20}
             />
@@ -1415,8 +1439,18 @@ const handleSelectActivity =
               <AnalysisPanel
                 analysis={analysis}
               />
+
+              <ExportActions
+                analysis={analysis}
+                revision={revision}
+              />
+
+              
             </div>
           }
+
+          
+
           learningContent={
             <LearningPanel
               selectedActivityId={selectedActivityId}
@@ -1425,6 +1459,13 @@ const handleSelectActivity =
               activityResult={activityResult}
             />
           }
+          
+          expressionContent={
+            <ExpressionBuilderPanel
+              onGenerate={handleGenerateFromExpression}
+            />
+          }
+
           modelContent={
             <div className="dock-model-panel">
               <div className="dock-model-heading">
@@ -1440,6 +1481,7 @@ const handleSelectActivity =
                 )}
               </pre>
             </div>
+            
           }
         />
 

@@ -1808,3 +1808,42 @@ body,
     min-height: 36px;
   }
 }
+
+/* Añadir al FINAL de src/index.css */
+.gatelogic-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+.gatelogic-export-actions button {
+  border: 0;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #fff;
+  padding: 9px 12px;
+  min-height: 42px;
+  cursor: pointer;
+}
+.gatelogic-export-actions button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+.gatelogic-export-actions small { color: #64748b; }
+.gatelogic-export-error { color: #b91c1c; width: 100%; }
+@media (max-width: 767px) {
+  .gatelogic-export-actions button { flex: 1 1 120px; }
+}
+
+.expression-builder{padding:14px;border-top:1px solid #e2e8f0;background:#f8fafc;color:#0f172a}
+.expression-builder h3{margin:0 0 8px;font-size:15px}
+.expression-builder p{margin:7px 0;font-size:12px;line-height:1.5}
+.expression-builder label{display:block;font-size:12px;font-weight:700;margin:12px 0 5px}
+.expression-builder textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid #94a3b8;border-radius:8px;padding:10px;font:14px/1.5 ui-monospace,monospace;background:white;color:#0f172a}
+.expression-builder-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.expression-builder-actions button{cursor:pointer;border:1px solid #2563eb;border-radius:8px;background:#fff;color:#1d4ed8;padding:9px 12px;font-weight:700}
+.expression-builder-actions button:last-child{background:#2563eb;color:white}
+.expression-builder-error{color:#b91c1c!important;font-weight:700}
+.expression-builder-hint{color:#64748b}
+@media(max-width:767px){.expression-builder{padding:10px}.expression-builder-actions button{flex:1;min-height:44px}}

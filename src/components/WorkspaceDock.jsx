@@ -27,6 +27,8 @@ function getInitialHeight() {
   return DEFAULT_HEIGHT;
 }
 
+
+
 export default function WorkspaceDock({
   open,
   onOpenChange,
@@ -35,6 +37,7 @@ export default function WorkspaceDock({
   resultsContent,
   learningContent,
   modelContent,
+  expressionContent,
 }) {
   const [height, setHeight] = useState(getInitialHeight);
 
@@ -101,12 +104,18 @@ export default function WorkspaceDock({
   const tabs = [
     ['results', 'Resultados'],
     ['learning', 'Aprendizaje'],
+    ['expression', 'Expresión → Circuito'],
     ['model', 'Modelo'],
   ];
-
+    
+  
   const renderContent = () => {
     if (activeTab === 'learning') {
       return learningContent;
+    }
+
+    if (activeTab === 'expression') {
+      return expressionContent;
     }
 
     if (activeTab === 'model') {
@@ -184,6 +193,7 @@ export default function WorkspaceDock({
 
       <div className="workspace-dock-content">
         {renderContent()}
+
       </div>
     </section>
   );
