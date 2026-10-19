@@ -1369,32 +1369,23 @@ const handleSelectActivity =
 
         <div className="flow-container">
           <ReactFlow
-            nodes={
-              displayedNodes
-            }
-            edges={
-              displayedEdges
-            }
-            nodeTypes={
-              nodeTypes
-            }
-            onNodesChange={
-              onNodesChange
-            }
-            onEdgesChange={
-              onEdgesChange
-            }
-            onConnect={
-              onConnect
-            }
-            isValidConnection={
-              isValidConnection
-            }
+            nodes={displayedNodes}
+            edges={displayedEdges}
+            nodeTypes={nodeTypes}
+
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            isValidConnection={isValidConnection}
+
+            panOnDrag
+            zoomOnPinch
+            zoomOnDoubleClick={false}
+            nodesDraggable
+            nodesConnectable
+
             fitView
-            deleteKeyCode={[
-              'Backspace',
-              'Delete',
-            ]}
+            deleteKeyCode={['Backspace', 'Delete']}
           >
             <Background
               gap={20}

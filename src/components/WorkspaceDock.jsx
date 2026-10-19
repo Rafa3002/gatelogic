@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState } from 'react';
 
 const MIN_HEIGHT = 180;
@@ -5,6 +6,25 @@ const DEFAULT_HEIGHT = 320;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function getInitialHeight() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_HEIGHT;
+  }
+
+  if (window.innerWidth <= 767) {
+    return Math.min(
+      260,
+      window.innerHeight * 0.4
+    );
+  }
+
+  if (window.innerWidth <= 1024) {
+    return 280;
+  }
+
+  return DEFAULT_HEIGHT;
 }
 
 export default function WorkspaceDock({
@@ -16,41 +36,67 @@ export default function WorkspaceDock({
   learningContent,
   modelContent,
 }) {
-  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const [height, setHeight] = useState(getInitialHeight);
+
   const dragState = useRef(null);
 
-  const beginResize = useCallback((event) => {
-    event.preventDefault();
+  const beginResize = useCallback(
+    (event) => {
+      event.preventDefault();
 
-    dragState.current = {
-      startY: event.clientY,
-      startHeight: height,
-    };
+      dragState.current = {
+        startY: event.clientY,
+        startHeight: height,
+      };
 
-    const handleMove = (moveEvent) => {
-      if (!dragState.current) return;
+      const handleMove = (moveEvent) => {
+        if (!dragState.current) {
+          return;
+        }
 
-      const delta = dragState.current.startY - moveEvent.clientY;
-      const maxHeight = Math.max(MIN_HEIGHT, window.innerHeight * 0.68);
+        const delta =
+          dragState.current.startY - moveEvent.clientY;
 
-      setHeight(
-        clamp(
-          dragState.current.startHeight + delta,
+        const maxHeight = Math.max(
           MIN_HEIGHT,
-          maxHeight,
-        )
+          window.innerHeight * 0.55
+        );
+
+        setHeight(
+          clamp(
+            dragState.current.startHeight + delta,
+            MIN_HEIGHT,
+            maxHeight
+          )
+        );
+      };
+
+      const handleUp = () => {
+        dragState.current = null;
+
+        window.removeEventListener(
+          'pointermove',
+          handleMove
+        );
+
+        window.removeEventListener(
+          'pointerup',
+          handleUp
+        );
+      };
+
+      window.addEventListener(
+        'pointermove',
+        handleMove
       );
-    };
 
-    const handleUp = () => {
-      dragState.current = null;
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleUp);
-    };
-
-    window.addEventListener('pointermove', handleMove);
-    window.addEventListener('pointerup', handleUp);
-  }, [height]);
+      window.addEventListener(
+        'pointerup',
+        handleUp
+      );
+    },
+    [height]
+  );
 
   const tabs = [
     ['results', 'Resultados'],
@@ -59,8 +105,14 @@ export default function WorkspaceDock({
   ];
 
   const renderContent = () => {
-    if (activeTab === 'learning') return learningContent;
-    if (activeTab === 'model') return modelContent;
+    if (activeTab === 'learning') {
+      return learningContent;
+    }
+
+    if (activeTab === 'model') {
+      return modelContent;
+    }
+
     return resultsContent;
   };
 
@@ -92,12 +144,22 @@ export default function WorkspaceDock({
       </div>
 
       <header className="dock-toolbar">
-        <div className="dock-tabs" role="tablist" aria-label="Panel de trabajo">
+        <div
+          className="dock-tabs"
+          role="tablist"
+          aria-label="Panel de trabajo"
+        >
           {tabs.map(([id, label]) => (
             <button
               key={id}
               type="button"
-              className={activeTab === id ? 'dock-tab active' : 'dock-tab'}
+              role="tab"
+              aria-selected={activeTab === id}
+              className={
+                activeTab === id
+                  ? 'dock-tab active'
+                  : 'dock-tab'
+              }
               onClick={() => onTabChange(id)}
             >
               {label}
@@ -106,7 +168,10 @@ export default function WorkspaceDock({
         </div>
 
         <div className="dock-actions">
-          <span className="dock-size-label">{Math.round(height)} px</span>
+          <span className="dock-size-label">
+            {Math.round(height)} px
+          </span>
+
           <button
             type="button"
             className="dock-collapse-button"

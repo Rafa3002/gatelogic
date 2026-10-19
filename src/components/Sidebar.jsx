@@ -79,24 +79,50 @@ export default function Sidebar({
       </div>
 
       <div className="help-box">
-        <strong>Ayuda</strong>
+        <strong>¿Cómo usar GateLogic?</strong>
 
-        <p>
-          Arrastra los componentes para moverlos.
-        </p>
+          <p>
+            1. Agrega entradas, compuertas y salidas.
+          </p>
 
-        <p>
-          Une los círculos de salida con los círculos de entrada.
-        </p>
+          <p>
+            2. Une los puertos para construir el circuito.
+          </p>
 
-        <p>
-          Activa <strong>Simular en vivo</strong> para que las señales se recalculen al cambiar entradas o conexiones.
-        </p>
+          <p>
+            3. Activa Simular en vivo para cambiar
+            las señales entre 0 y 1.
+          </p>
 
-        <p>
-          Selecciona un componente o conexión y presiona
-          <strong> Delete / Supr</strong> para eliminarlo.
-        </p>
+          <p>
+            4. Selecciona Analizar circuito para
+            generar la tabla y expresión booleana.
+          </p>
+
+          <details className="help-details">
+            <summary>Más instrucciones</summary>
+
+            <p>
+              Arrastra las compuertas para moverlas
+              dentro del editor.
+            </p>
+
+            <p>
+              Usa los controles de zoom para acercar
+              o alejar el circuito.
+            </p>
+
+            <p>
+              Selecciona un componente o conexión y
+              presiona Supr para eliminarlo en
+              computadoras.
+            </p>
+
+            <p>
+              Puedes minimizar el panel inferior
+              para disponer de más espacio.
+            </p>
+          </details>
       </div>
     </aside>
   );
