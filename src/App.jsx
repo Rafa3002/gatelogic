@@ -56,6 +56,13 @@ const nodeTypes = {
   logicNode: LogicNode,
 };
 
+import LearningPanel
+  from './components/LearningPanel';
+
+import {
+  learningActivities,
+} from './utils/learningActivities';
+
 function createEmptyAnalysis() {
   return {
     status: 'SIN_GENERAR',
@@ -250,6 +257,21 @@ export default function App() {
   ] = useState(null);
 
   const [
+  learningOpen,
+  setLearningOpen,
+] = useState(false);
+
+const [
+  selectedActivityId,
+  setSelectedActivityId,
+] = useState(null);
+
+const [
+  activityResult,
+  setActivityResult,
+] = useState(null);
+
+  const [
     simulation,
     setSimulation,
   ] = useState(
@@ -327,6 +349,8 @@ export default function App() {
         setValidationResult(
           null
         );
+
+        setActivityResult(null);
 
         setSimulation(
           (current) => {
@@ -1032,6 +1056,184 @@ export default function App() {
       ]
     );
 
+const handleSelectActivity =
+  useCallback(
+    (activityId) => {
+      setSelectedActivityId(
+        activityId
+      );
+
+      setActivityResult(
+        null
+      );
+
+      setMessage(
+        `Actividad ${activityId} seleccionada. Construye el circuito y comprueba tu solución.`
+      );
+    },
+    []
+  );
+
+  const handleCheckActivity =
+  useCallback(() => {
+    const activity =
+      learningActivities.find(
+        (item) =>
+          item.id ===
+          selectedActivityId
+      );
+
+    if (!activity) {
+      setActivityResult({
+        success: false,
+
+        message:
+          'Selecciona una actividad antes de comprobar el circuito.',
+      });
+
+      return;
+    }
+
+    try {
+      const table =
+        generateTruthTable(
+          nodes,
+          edges,
+          revision
+        );
+
+      if (
+        table.inputs.length !==
+        activity.expectedInputs
+      ) {
+        setActivityResult({
+          success: false,
+
+          message:
+            `La actividad requiere ${activity.expectedInputs} entrada(s), pero tu circuito activo posee ${table.inputs.length}.`,
+        });
+
+        return;
+      }
+
+      if (
+        table.outputs.length !==
+        activity.expectedOutputs
+      ) {
+        setActivityResult({
+          success: false,
+
+          message:
+            `La actividad requiere ${activity.expectedOutputs} salida(s), pero tu circuito posee ${table.outputs.length}.`,
+        });
+
+        return;
+      }
+
+      if (
+        table.rows.length !==
+        activity
+          .expectedOutputRows
+          .length
+      ) {
+        setActivityResult({
+          success: false,
+
+          message:
+            'La cantidad de combinaciones no coincide con la actividad.',
+        });
+
+        return;
+      }
+
+      let allRowsMatch = true;
+
+      for (
+        let index = 0;
+        index < table.rows.length;
+        index++
+      ) {
+        const obtained =
+          table.rows[
+            index
+          ].outputValues;
+
+        const expected =
+          activity
+            .expectedOutputRows[
+              index
+            ];
+
+        if (
+          obtained.length !==
+          expected.length
+        ) {
+          allRowsMatch =
+            false;
+
+          break;
+        }
+
+        for (
+          let outputIndex = 0;
+          outputIndex <
+          expected.length;
+          outputIndex++
+        ) {
+          if (
+            obtained[
+              outputIndex
+            ] !==
+            expected[
+              outputIndex
+            ]
+          ) {
+            allRowsMatch =
+              false;
+
+            break;
+          }
+        }
+
+        if (!allRowsMatch) {
+          break;
+        }
+      }
+
+      if (allRowsMatch) {
+        setActivityResult({
+          success: true,
+
+          message:
+            'El comportamiento de tu circuito coincide con la función solicitada. Puedes continuar con la siguiente actividad.',
+        });
+
+        setMessage(
+          `${activity.id} completada correctamente.`
+        );
+      } else {
+        setActivityResult({
+          success: false,
+
+          message:
+            'Tu circuito es válido, pero su tabla de verdad no coincide con la función solicitada. Revisa las compuertas y conexiones.',
+        });
+      }
+    } catch (error) {
+      setActivityResult({
+        success: false,
+
+        message:
+          `No fue posible evaluar tu solución: ${error.message}`,
+      });
+    }
+  }, [
+    selectedActivityId,
+    nodes,
+    edges,
+    revision,
+  ]);
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -1067,6 +1269,19 @@ export default function App() {
 
           <div className="header-right">
             <div className="header-actions">
+              <button
+                className="learning-action"
+                onClick={() =>
+                  setLearningOpen(
+                    (current) =>
+                      !current
+                  )
+                }
+              >
+                {learningOpen
+                  ? 'Cerrar aprendizaje'
+                  : 'Modo aprendizaje'}
+              </button>
               <button
                 className="validate-action"
                 onClick={
@@ -1140,6 +1355,25 @@ export default function App() {
           </ReactFlow>
         </div>
 
+      {learningOpen && (
+        <LearningPanel
+          selectedActivityId={
+            selectedActivityId
+          }
+
+          onSelectActivity={
+            handleSelectActivity
+          }
+
+          onCheckActivity={
+            handleCheckActivity
+          }
+
+          activityResult={
+            activityResult
+          }
+        />
+      )}
         <FeedbackPanel
           validation={
             validationResult
