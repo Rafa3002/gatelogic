@@ -12,6 +12,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -26,6 +27,9 @@ import AnalysisPanel
 
 import FeedbackPanel
   from './components/FeedbackPanel';
+
+import WorkspaceDock
+  from './components/WorkspaceDock';
 
 import {
   buildCircuitModel,
@@ -241,6 +245,14 @@ export default function App() {
     onEdgesChangeOriginal,
   ] = useEdgesState([]);
 
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
+
   const [
     revision,
     setRevision,
@@ -257,19 +269,29 @@ export default function App() {
   ] = useState(null);
 
   const [
-  learningOpen,
-  setLearningOpen,
-] = useState(false);
+    dockOpen,
+    setDockOpen,
+  ] = useState(false);
 
-const [
-  selectedActivityId,
-  setSelectedActivityId,
-] = useState(null);
+  const [
+    dockTab,
+    setDockTab,
+  ] = useState('results');
 
-const [
-  activityResult,
-  setActivityResult,
-] = useState(null);
+  const [
+    simulationLive,
+    setSimulationLive,
+  ] = useState(false);
+
+  const [
+    selectedActivityId,
+    setSelectedActivityId,
+  ] = useState(null);
+
+  const [
+    activityResult,
+    setActivityResult,
+  ] = useState(null);
 
   const [
     simulation,
@@ -354,13 +376,17 @@ const [
 
         setSimulation(
           (current) => {
-            if (
-              current.result
-            ) {
+            if (simulationLive) {
               return {
                 ...current,
-                status:
-                  'DESACTUALIZADO',
+                status: 'PROCESANDO',
+              };
+            }
+
+            if (current.result) {
+              return {
+                ...current,
+                status: 'DESACTUALIZADO',
               };
             }
 
@@ -376,8 +402,7 @@ const [
             ) {
               return {
                 ...current,
-                status:
-                  'DESACTUALIZADO',
+                status: 'DESACTUALIZADO',
               };
             }
 
@@ -385,9 +410,13 @@ const [
           }
         );
 
-        setMessage(text);
+        setMessage(
+          simulationLive
+            ? `${text} La simulación en vivo se actualizará automáticamente.`
+            : text
+        );
       },
-      []
+      [simulationLive]
     );
 
   /*
@@ -600,6 +629,7 @@ const [
       setEdges([]);
       setInputValues({});
       setValidationResult(null);
+      setSimulationLive(false);
 
       setSimulation(
         createEmptySimulation()
@@ -638,30 +668,31 @@ const [
             ...current,
 
             [inputId]:
-              current[
-                inputId
-              ] === 1
+              current[inputId] === 1
                 ? 0
                 : 1,
           })
         );
 
-        setSimulation(
-          (current) =>
-            current.result
-              ? {
-                  ...current,
-                  status:
-                    'DESACTUALIZADO',
-                }
-              : current
-        );
+        if (!simulationLive) {
+          setSimulation(
+            (current) =>
+              current.result
+                ? {
+                    ...current,
+                    status: 'DESACTUALIZADO',
+                  }
+                : current
+          );
+        }
 
         setMessage(
-          'Entrada modificada. Ejecuta nuevamente la simulación para actualizar los estados.'
+          simulationLive
+            ? 'Entrada modificada. La simulación en vivo actualizará las señales automáticamente.'
+            : 'Entrada modificada. Inicia la simulación para actualizar los estados.'
         );
       },
-      []
+      [simulationLive]
     );
 
   /*
@@ -672,6 +703,9 @@ const [
 
   const handleValidate =
     useCallback(() => {
+      setDockOpen(true);
+      setDockTab('results');
+
       const result =
         validateCircuit(
           nodes,
@@ -702,21 +736,22 @@ const [
    * --------------------------------------------
    */
 
-  const handleSimulation =
+  const executeSimulation =
     useCallback(() => {
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
+
       const validation =
         validateCircuit(
-          nodes,
-          edges
+          currentNodes,
+          currentEdges
         );
 
       setValidationResult(
         validation
       );
 
-      if (
-        !validation.isValid
-      ) {
+      if (!validation.isValid) {
         setSimulation({
           status: 'ERROR',
           revision,
@@ -730,53 +765,80 @@ const [
               .join(' '),
         });
 
-        setMessage(
-          'La simulación fue cancelada porque el circuito es inválido.'
-        );
-
-        return;
+        return false;
       }
 
       try {
         const result =
           simulateCircuit(
-            nodes,
-            edges,
+            currentNodes,
+            currentEdges,
             inputValues,
             validation
           );
 
         setSimulation({
-          status:
-            'VIGENTE',
-
+          status: 'VIGENTE',
           revision,
           result,
           error: '',
         });
 
-        setMessage(
-          'Simulación completada correctamente.'
-        );
+        return true;
       } catch (error) {
         setSimulation({
           status: 'ERROR',
           revision,
           result: null,
-          error:
-            error.message,
+          error: error.message,
         });
 
-        setMessage(
-          'Ocurrió un error durante la simulación.'
-        );
+        return false;
       }
     }, [
-      nodes,
-      edges,
       inputValues,
       revision,
     ]);
+
+  const handleSimulation =
+    useCallback(() => {
+      setDockOpen(true);
+      setDockTab('results');
+
+      if (simulationLive) {
+        setSimulationLive(false);
+        setMessage(
+          'Simulación en vivo pausada. Los últimos valores permanecerán visibles hasta que el circuito cambie.'
+        );
+        return;
+      }
+
+      setSimulationLive(true);
+      setMessage(
+        'Simulación en vivo iniciada. Los cambios de entradas y del circuito se recalcularán automáticamente.'
+      );
+    }, [simulationLive]);
+
+  useEffect(() => {
+    if (!simulationLive) {
+      return;
+    }
+
+    const success = executeSimulation();
+
+    if (success) {
+      setMessage(
+        'Simulación en vivo actualizada automáticamente.'
+      );
+    } else {
+      setMessage(
+        'La simulación en vivo está activa, pero el circuito debe corregirse antes de poder evaluarse.'
+      );
+    }
+  }, [
+    simulationLive,
+    executeSimulation,
+  ]);
 
   /*
    * --------------------------------------------
@@ -786,6 +848,9 @@ const [
 
   const handleAnalysis =
     useCallback(() => {
+      setDockOpen(true);
+      setDockTab('results');
+
       const validation =
         validateCircuit(
           nodes,
@@ -1059,6 +1124,9 @@ const [
 const handleSelectActivity =
   useCallback(
     (activityId) => {
+      setDockOpen(true);
+      setDockTab('learning');
+
       setSelectedActivityId(
         activityId
       );
@@ -1271,14 +1339,21 @@ const handleSelectActivity =
             <div className="header-actions">
               <button
                 className="learning-action"
-                onClick={() =>
-                  setLearningOpen(
-                    (current) =>
-                      !current
-                  )
-                }
+                onClick={() => {
+                  if (
+                    dockOpen &&
+                    dockTab === 'learning'
+                  ) {
+                    setDockOpen(false);
+                    return;
+                  }
+
+                  setDockOpen(true);
+                  setDockTab('learning');
+                }}
               >
-                {learningOpen
+                {dockOpen &&
+                dockTab === 'learning'
                   ? 'Cerrar aprendizaje'
                   : 'Modo aprendizaje'}
               </button>
@@ -1292,12 +1367,18 @@ const handleSelectActivity =
               </button>
 
               <button
-                className="simulate-action"
+                className={
+                  simulationLive
+                    ? 'simulate-action active'
+                    : 'simulate-action'
+                }
                 onClick={
                   handleSimulation
                 }
               >
-                Simular
+                {simulationLive
+                  ? 'Pausar simulación'
+                  : 'Simular en vivo'}
               </button>
 
               <button
@@ -1355,55 +1436,52 @@ const handleSelectActivity =
           </ReactFlow>
         </div>
 
-      {learningOpen && (
-        <LearningPanel
-          selectedActivityId={
-            selectedActivityId
-          }
 
-          onSelectActivity={
-            handleSelectActivity
-          }
+        <WorkspaceDock
+          open={dockOpen}
+          onOpenChange={setDockOpen}
+          activeTab={dockTab}
+          onTabChange={setDockTab}
+          resultsContent={
+            <div className="dock-results-stack">
+              <FeedbackPanel
+                validation={validationResult}
+                simulation={simulation}
+                simulationLive={simulationLive}
+                nodes={nodes}
+              />
 
-          onCheckActivity={
-            handleCheckActivity
+              <AnalysisPanel
+                analysis={analysis}
+              />
+            </div>
           }
+          learningContent={
+            <LearningPanel
+              selectedActivityId={selectedActivityId}
+              onSelectActivity={handleSelectActivity}
+              onCheckActivity={handleCheckActivity}
+              activityResult={activityResult}
+            />
+          }
+          modelContent={
+            <div className="dock-model-panel">
+              <div className="dock-model-heading">
+                <strong>Modelo interno del circuito</strong>
+                <span>Revisión {revision}</span>
+              </div>
 
-          activityResult={
-            activityResult
+              <pre>
+                {JSON.stringify(
+                  model,
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
           }
         />
-      )}
-        <FeedbackPanel
-          validation={
-            validationResult
-          }
-          simulation={
-            simulation
-          }
-          nodes={nodes}
-        />
 
-        <AnalysisPanel
-          analysis={
-            analysis
-          }
-        />
-
-        <details className="model-panel">
-          <summary>
-            Ver modelo interno
-            del circuito
-          </summary>
-
-          <pre>
-            {JSON.stringify(
-              model,
-              null,
-              2
-            )}
-          </pre>
-        </details>
       </main>
     </div>
   );

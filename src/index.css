@@ -966,3 +966,383 @@ button {
       );
   }
 }
+/* =========================================================
+   INTEGRACIÓN E24 — SIMULACIÓN EN VIVO, DOCK Y COMPUERTAS
+========================================================= */
+
+.workspace-header {
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.simulate-action.active {
+  background: #065f46;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+/* ---------- Compuertas con simbología lógica ---------- */
+
+.logic-node.gate-node {
+  width: 120px;
+  min-width: 120px;
+  height: 82px;
+  min-height: 82px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.gate-visual {
+  position: relative;
+  width: 104px;
+  height: 82px;
+  margin: 0 auto;
+  color: #374151;
+}
+
+.gate-body-svg {
+  display: block;
+  width: 104px;
+  height: 70px;
+  overflow: visible;
+  color: inherit;
+  filter: drop-shadow(0 2px 2px rgba(15, 23, 42, 0.12));
+}
+
+.gate-body-label {
+  fill: #111827;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.gate-node .gate-instance {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.gate-node .value-badge {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  margin: 0;
+  z-index: 3;
+}
+
+.logic-node.gate-node.node-signal-high,
+.logic-node.gate-node.node-signal-low,
+.logic-node.gate-node.node-validation-error {
+  box-shadow: none;
+}
+
+.logic-node.gate-node.node-signal-high .gate-body-svg {
+  color: #16a34a;
+}
+
+.logic-node.gate-node.node-signal-low .gate-body-svg {
+  color: #475569;
+}
+
+.logic-node.gate-node.node-validation-error .gate-body-svg {
+  color: #dc2626;
+  filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.28));
+}
+
+.logic-node.gate-node.node-validation-error {
+  border: 0 !important;
+}
+
+/* ---------- Paleta lateral con formas reales ---------- */
+
+.sidebar .gate-palette-button {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 5px 8px;
+}
+
+.gate-palette-icon {
+  display: block;
+  width: 56px;
+  height: 40px;
+  color: #dbeafe;
+  pointer-events: none;
+}
+
+.gate-palette-icon .gate-body-svg {
+  width: 56px;
+  height: 40px;
+  filter: none;
+}
+
+.gate-palette-icon .gate-body-label {
+  fill: #f8fafc;
+  font-size: 10px;
+}
+
+.gate-palette-label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+}
+
+.gate-palette-label small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.gate-palette-add {
+  font-size: 19px;
+  font-weight: 800;
+  color: #93c5fd;
+}
+
+/* ---------- Panel inferior redimensionable ---------- */
+
+.workspace {
+  overflow: hidden;
+}
+
+.flow-container {
+  min-height: 210px;
+}
+
+.workspace-dock {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 180px;
+  border-top: 1px solid #cbd5e1;
+  background: #f8fafc;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.workspace-dock-collapsed {
+  min-height: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.dock-open-button,
+.dock-collapse-button,
+.dock-tab {
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dock-open-button {
+  background: transparent;
+  color: #475569;
+  padding: 7px 16px;
+}
+
+.dock-open-button:hover {
+  color: #2563eb;
+}
+
+.dock-resize-handle {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 12px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-resize-handle span {
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: #94a3b8;
+  transition: width 0.15s ease, background 0.15s ease;
+}
+
+.dock-resize-handle:hover span {
+  width: 84px;
+  background: #2563eb;
+}
+
+.dock-toolbar {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.dock-tabs,
+.dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-tab {
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 7px 12px;
+}
+
+.dock-tab:hover {
+  background: #e2e8f0;
+}
+
+.dock-tab.active {
+  background: #2563eb;
+  color: white;
+}
+
+.dock-size-label {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.dock-collapse-button {
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 7px 11px;
+}
+
+.dock-collapse-button:hover {
+  background: #e2e8f0;
+}
+
+.workspace-dock-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workspace-dock .feedback-panel {
+  border-top: 0;
+  padding-top: 12px;
+}
+
+.workspace-dock .analysis-panel {
+  max-height: none;
+  overflow: visible;
+  border-top: 1px solid #e2e8f0;
+}
+
+.workspace-dock .learning-panel {
+  max-height: none;
+  overflow: visible;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.dock-results-stack {
+  min-height: 100%;
+}
+
+.dock-model-panel {
+  min-height: 100%;
+  padding: 14px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.dock-model-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dock-model-heading span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.dock-model-panel pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Evita que una tabla grande expanda todo el espacio de trabajo. */
+.workspace-dock .table-wrapper {
+  max-height: 260px;
+}
+
+@media (max-width: 1050px) {
+  .workspace-header {
+    align-items: flex-start;
+  }
+
+  .header-right {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+  }
+
+  .status-message {
+    width: 100%;
+  }
+}
+
+.status-processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.simulation-live-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #ecfdf5;
+  color: #166534;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Ajuste final de proporciones del símbolo lógico. */
+.gate-visual,
+.gate-body-svg {
+  width: 120px;
+}
+
+.gate-visual {
+  margin: 0;
+}

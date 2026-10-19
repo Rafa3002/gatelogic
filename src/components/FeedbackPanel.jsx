@@ -1,6 +1,7 @@
 export default function FeedbackPanel({
   validation,
   simulation,
+  simulationLive = false,
   nodes,
 }) {
   const hasValidation =
@@ -125,20 +126,26 @@ export default function FeedbackPanel({
 
             <span
               className={
-                simulation.status ===
-                'VIGENTE'
+                simulation.status === 'VIGENTE'
                   ? 'status-valid'
-                  : simulation.status ===
-                      'DESACTUALIZADO'
-                    ? 'status-warning'
-                    : 'status-error'
+                  : simulation.status === 'PROCESANDO'
+                    ? 'status-processing'
+                    : simulation.status === 'DESACTUALIZADO'
+                      ? 'status-warning'
+                      : 'status-error'
               }
             >
-              {
-                simulation.status
-              }
+              {simulationLive && simulation.status === 'VIGENTE'
+                ? 'EN VIVO'
+                : simulation.status}
             </span>
           </div>
+
+          {simulationLive && (
+            <p className="simulation-live-note">
+              Actualización automática activa: los cambios de entradas y conexiones se recalculan sin reiniciar manualmente la simulación.
+            </p>
+          )}
 
           {simulation.error && (
             <p className="simulation-error">

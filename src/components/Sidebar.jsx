@@ -1,3 +1,5 @@
+import GateShape from '../nodes/GateShape';
+
 const components = [
   { kind: 'INPUT', label: 'Entrada' },
   { kind: 'OUTPUT', label: 'Salida' },
@@ -30,9 +32,7 @@ export default function Sidebar({
         {components.slice(0, 2).map((component) => (
           <button
             key={component.kind}
-            onClick={() =>
-              onAddComponent(component.kind)
-            }
+            onClick={() => onAddComponent(component.kind)}
           >
             + {component.label}
           </button>
@@ -44,12 +44,20 @@ export default function Sidebar({
 
         {components.slice(2).map((component) => (
           <button
+            className="gate-palette-button"
             key={component.kind}
-            onClick={() =>
-              onAddComponent(component.kind)
-            }
+            onClick={() => onAddComponent(component.kind)}
           >
-            + {component.label}
+            <span className="gate-palette-icon" aria-hidden="true">
+              <GateShape kind={component.kind} />
+            </span>
+
+            <span className="gate-palette-label">
+              <strong>{component.label}</strong>
+              <small>Agregar compuerta</small>
+            </span>
+
+            <span className="gate-palette-add">+</span>
           </button>
         ))}
       </div>
@@ -79,6 +87,10 @@ export default function Sidebar({
 
         <p>
           Une los círculos de salida con los círculos de entrada.
+        </p>
+
+        <p>
+          Activa <strong>Simular en vivo</strong> para que las señales se recalculen al cambiar entradas o conexiones.
         </p>
 
         <p>

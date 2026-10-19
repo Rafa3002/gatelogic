@@ -3,6 +3,8 @@ import {
   Position,
 } from '@xyflow/react';
 
+import GateShape from './GateShape';
+
 function InputHandle({
   id,
   top,
@@ -10,9 +12,7 @@ function InputHandle({
   return (
     <Handle
       type="target"
-      position={
-        Position.Left
-      }
+      position={Position.Left}
       id={id}
       style={{ top }}
     />
@@ -96,10 +96,7 @@ export default function LogicNode({
           className="input-toggle nodrag nopan"
           onClick={(event) => {
             event.stopPropagation();
-
-            onToggleInput?.(
-              id
-            );
+            onToggleInput?.(id);
           }}
           type="button"
         >
@@ -108,9 +105,7 @@ export default function LogicNode({
 
         <Handle
           type="source"
-          position={
-            Position.Right
-          }
+          position={Position.Right}
           id="out"
         />
       </div>
@@ -126,9 +121,7 @@ export default function LogicNode({
       >
         <Handle
           type="target"
-          position={
-            Position.Left
-          }
+          position={Position.Left}
           id="in-0"
         />
 
@@ -141,9 +134,7 @@ export default function LogicNode({
         </div>
 
         <ValueBadge
-          value={
-            logicValue
-          }
+          value={logicValue}
         />
       </div>
     );
@@ -163,40 +154,39 @@ export default function LogicNode({
       {inputCount === 1 ? (
         <InputHandle
           id="in-0"
-          top="50%"
+          top="43%"
         />
       ) : (
         <>
           <InputHandle
             id="in-0"
-            top="32%"
+            top="26%"
           />
 
           <InputHandle
             id="in-1"
-            top="68%"
+            top="60%"
           />
         </>
       )}
 
-      <div className="gate-symbol">
-        {kind}
-      </div>
+      <div className="gate-visual">
+        <GateShape kind={kind} />
 
-      <div className="gate-instance">
-        {name}
-      </div>
+        <div className="gate-instance">
+          {name}
+        </div>
 
-      <ValueBadge
-        value={logicValue}
-      />
+        <ValueBadge
+          value={logicValue}
+        />
+      </div>
 
       <Handle
         type="source"
-        position={
-          Position.Right
-        }
+        position={Position.Right}
         id="out"
+        style={{ top: '43%' }}
       />
     </div>
   );
