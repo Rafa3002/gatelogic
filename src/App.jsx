@@ -319,46 +319,7 @@ export default function App() {
    * eliminadas.
    */
 
-  useEffect(() => {
-    const inputIds =
-      new Set(
-        nodes
-          .filter(
-            (node) =>
-              node.data.kind ===
-              'INPUT'
-          )
-          .map(
-            (node) =>
-              node.id
-          )
-      );
-
-    setInputValues(
-      (current) => {
-        const next = {};
-
-        for (
-          const [
-            id,
-            value,
-          ]
-          of Object.entries(
-            current
-          )
-        ) {
-          if (
-            inputIds.has(id)
-          ) {
-            next[id] =
-              value;
-          }
-        }
-
-        return next;
-      }
-    );
-  }, [nodes]);
+  
 
   const markStructuralChange =
     useCallback(
@@ -546,14 +507,33 @@ export default function App() {
           changes
         );
 
-        const removed =
-          changes.some(
-            (change) =>
-              change.type ===
-              'remove'
+        const removedIds =
+          changes
+            .filter(
+              (change) =>
+                change.type ===
+                'remove'
+            )
+            .map(
+              (change) =>
+                change.id
+            );
+
+        if (removedIds.length > 0) {
+          setInputValues(
+            (current) => {
+              const next = {
+                ...current,
+              };
+
+              for (const id of removedIds) {
+                delete next[id];
+              }
+
+              return next;
+            }
           );
 
-        if (removed) {
           markStructuralChange(
             'Componente eliminado. Los resultados anteriores dejaron de estar vigentes.'
           );
@@ -820,25 +800,15 @@ export default function App() {
     }, [simulationLive]);
 
   useEffect(() => {
-    if (!simulationLive) {
-      return;
-    }
+      if (!simulationLive) {
+        return;
+      }
 
-    const success = executeSimulation();
-
-    if (success) {
-      setMessage(
-        'Simulación en vivo actualizada automáticamente.'
-      );
-    } else {
-      setMessage(
-        'La simulación en vivo está activa, pero el circuito debe corregirse antes de poder evaluarse.'
-      );
-    }
-  }, [
-    simulationLive,
-    executeSimulation,
-  ]);
+      executeSimulation();
+    }, [
+      simulationLive,
+      executeSimulation,
+    ]);
 
   /*
    * --------------------------------------------
