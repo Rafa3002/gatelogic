@@ -1,6 +1,6 @@
 import {
   evaluateExpressionAst,
-} from './booleanExpression';
+} from './booleanExpression.js';
 
 export function verifyEquivalence(
   truthTable,

@@ -2,7 +2,7 @@ import {
   validateCircuit,
   requiredInputHandles,
   getIncomingEdge,
-} from './validation';
+} from './validation.js';
 
 export function evaluateGate(
   kind,

@@ -2,7 +2,7 @@ import {
   validateCircuit,
   requiredInputHandles,
   getIncomingEdge,
-} from './validation';
+} from './validation.js';
 
 function sortByName(a, b) {
   return a.data.name.localeCompare(

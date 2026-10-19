@@ -1,10 +1,10 @@
 import {
   validateCircuit,
-} from './validation';
+} from './validation.js';
 
 import {
   simulateCircuit,
-} from './circuitEngine';
+} from './circuitEngine.js';
 
 const DEVELOPMENT_INPUT_LIMIT = 10;
 
